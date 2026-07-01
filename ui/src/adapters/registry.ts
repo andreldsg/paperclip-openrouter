@@ -24,8 +24,6 @@ import {
 
 import {
   parseStdout as openRouterParseStdout,
-  buildConfig as openRouterBuildConfig,
-  configFields as openRouterConfigFields,
 } from "@paperclipai/adapter-openrouter/ui";
 
 const uiAdapters: UIAdapterModule[] = [];
@@ -55,9 +53,9 @@ const openRouterAdapter: UIAdapterModule = {
   type: openRouterType,
   label: openRouterLabel,
   models: openRouterModels,
-  parseStdout: openRouterParseStdout,
-  buildConfig: openRouterBuildConfig,
-  configFields: openRouterConfigFields,
+  parseStdoutLine: openRouterParseStdout,
+  ConfigFields: SchemaConfigFields,
+  buildAdapterConfig: buildSchemaAdapterConfig,
   agentConfigurationDoc: openRouterAgentConfigurationDoc,
 };
 

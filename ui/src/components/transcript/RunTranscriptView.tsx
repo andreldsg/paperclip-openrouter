@@ -416,12 +416,15 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
   const pendingActivityBlocks = new Map<string, Extract<TranscriptBlock, { type: "activity" }>>();
 
   for (const entry of entries) {
+    const entryText = typeof (entry as any).text === "string" ? (entry as any).text : "";
+    const entryErrors = Array.isArray((entry as any).errors) ? (entry as any).errors : [];
+    const entryCostUsd = typeof (entry as any).costUsd === "number" ? (entry as any).costUsd : 0;
     const previous = blocks[blocks.length - 1];
 
     if (entry.kind === "assistant" || entry.kind === "user") {
       const isStreaming = streaming && entry.kind === "assistant" && entry.delta === true;
       if (previous?.type === "message" && previous.role === entry.kind) {
-        previous.text += previous.text.endsWith("\n") || entry.text.startsWith("\n") ? entry.text : `\n${entry.text}`;
+        previous.text += previous.text.endsWith("\n") || entryText.startsWith("\n") ? entryText : `\n${entryText}`;
         previous.ts = entry.ts;
         previous.streaming = previous.streaming || isStreaming;
       } else {
@@ -429,7 +432,7 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
           type: "message",
           role: entry.kind,
           ts: entry.ts,
-          text: entry.text,
+          text: entryText,
           streaming: isStreaming,
         });
       }
@@ -439,14 +442,14 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
     if (entry.kind === "thinking") {
       const isStreaming = streaming && entry.delta === true;
       if (previous?.type === "thinking") {
-        previous.text += previous.text.endsWith("\n") || entry.text.startsWith("\n") ? entry.text : `\n${entry.text}`;
+        previous.text += previous.text.endsWith("\n") || entryText.startsWith("\n") ? entryText : `\n${entryText}`;
         previous.ts = entry.ts;
         previous.streaming = previous.streaming || isStreaming;
       } else {
         blocks.push({
           type: "thinking",
           ts: entry.ts,
-          text: entry.text,
+          text: entryText,
           streaming: isStreaming,
         });
       }
@@ -513,40 +516,40 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
         ts: entry.ts,
         label: "result",
         tone: entry.isError ? "error" : "info",
-        text: entry.text.trim() || entry.errors[0] || (entry.isError ? "Run failed" : "Completed"),
+        text: entryText.trim() || entryErrors[0] || (entry.isError ? "Run failed" : "Completed"),
         detail:
-          !entry.isError && entry.text.trim().length > 0
-            ? `${formatTokens(entry.inputTokens)} / ${formatTokens(entry.outputTokens)} / $${entry.costUsd.toFixed(6)}`
+          !entry.isError && entryText.trim().length > 0
+            ? `${formatTokens(entry.inputTokens)} / ${formatTokens(entry.outputTokens)} / $${entryCostUsd.toFixed(6)}`
             : undefined,
       });
       continue;
     }
 
     if (entry.kind === "stderr") {
-      if (shouldHideNiceModeStderr(entry.text)) {
+      if (shouldHideNiceModeStderr(entryText)) {
         continue;
       }
       // Batch consecutive stderr entries into a single group
       const prev = blocks[blocks.length - 1];
       if (prev && prev.type === "stderr_group") {
-        prev.lines.push({ ts: entry.ts, text: entry.text });
+        prev.lines.push({ ts: entry.ts, text: entryText });
         prev.endTs = entry.ts;
       } else {
         blocks.push({
           type: "stderr_group",
           ts: entry.ts,
           endTs: entry.ts,
-          lines: [{ ts: entry.ts, text: entry.text }],
+          lines: [{ ts: entry.ts, text: entryText }],
         });
       }
       continue;
     }
 
     if (entry.kind === "system") {
-      if (compactWhitespace(entry.text).toLowerCase() === "turn started") {
+      if (compactWhitespace(entryText).toLowerCase() === "turn started") {
         continue;
       }
-      const activity = parseSystemActivity(entry.text);
+      const activity = parseSystemActivity(entryText);
       if (activity) {
         const existing = activity.activityId ? pendingActivityBlocks.get(activity.activityId) : undefined;
         if (existing) {
@@ -573,14 +576,14 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
       // Batch consecutive system events into a single collapsible group
       const prev = blocks[blocks.length - 1];
       if (prev && prev.type === "system_group") {
-        prev.lines.push({ ts: entry.ts, text: entry.text });
+        prev.lines.push({ ts: entry.ts, text: entryText });
         prev.endTs = entry.ts;
       } else {
         blocks.push({
           type: "system_group",
           ts: entry.ts,
           endTs: entry.ts,
-          lines: [{ ts: entry.ts, text: entry.text }],
+          lines: [{ ts: entry.ts, text: entryText }],
         });
       }
       continue;
@@ -591,9 +594,10 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
         block.type === "tool" && block.status === "running" && isCommandTool(block.name, block.input),
     );
     if (activeCommandBlock) {
-      activeCommandBlock.result = activeCommandBlock.result
-        ? `${activeCommandBlock.result}${activeCommandBlock.result.endsWith("\n") || entry.text.startsWith("\n") ? entry.text : `\n${entry.text}`}`
-        : entry.text;
+      const existingResult = typeof activeCommandBlock.result === "string" ? activeCommandBlock.result : "";
+      activeCommandBlock.result = existingResult.length > 0
+        ? `${existingResult}${existingResult.endsWith("\n") || entryText.startsWith("\n") ? entryText : `\n${entryText}`}`
+        : entryText;
       continue;
     }
 
@@ -603,30 +607,30 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
       if (prev && prev.type === "diff_group") {
         if (entry.changeType === "file_header") {
           // New file in the same diff block — update filePath
-          prev.filePath = entry.text;
+          prev.filePath = entryText;
         }
-        prev.hunks.push({ changeType: entry.changeType, text: entry.text });
+        prev.hunks.push({ changeType: entry.changeType, text: entryText });
         prev.endTs = entry.ts;
       } else {
         blocks.push({
           type: "diff_group",
           ts: entry.ts,
           endTs: entry.ts,
-          filePath: entry.changeType === "file_header" ? entry.text : undefined,
-          hunks: [{ changeType: entry.changeType, text: entry.text }],
+          filePath: entry.changeType === "file_header" ? entryText : undefined,
+          hunks: [{ changeType: entry.changeType, text: entryText }],
         });
       }
       continue;
     }
 
     if (previous?.type === "stdout") {
-      previous.text += previous.text.endsWith("\n") || entry.text.startsWith("\n") ? entry.text : `\n${entry.text}`;
+      previous.text += previous.text.endsWith("\n") || entryText.startsWith("\n") ? entryText : `\n${entryText}`;
       previous.ts = entry.ts;
     } else {
       blocks.push({
         type: "stdout",
         ts: entry.ts,
-        text: entry.text,
+        text: entryText,
       });
     }
   }

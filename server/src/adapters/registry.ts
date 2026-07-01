@@ -131,6 +131,7 @@ import {
   syncSkills as syncOpenRouterSkills,
   sessionCodec as openRouterSessionCodec,
   detectModel as detectOpenRouterModel,
+  listOpenRouterModels,
 } from "@paperclipai/adapter-openrouter/server";
 import { listCursorModels } from "./cursor-models.js";
 import {
@@ -423,6 +424,7 @@ const openRouterAdapter: ServerAdapterModule = {
   sessionCodec: openRouterSessionCodec,
   detectModel: detectOpenRouterModel,
   models: openRouterModels,
+  listModels: listOpenRouterModels,
   sessionManagement: getAdapterSessionManagement(openRouterType) ?? undefined,
   supportsLocalAgentJwt: true,
   supportsInstructionsBundle: true,
