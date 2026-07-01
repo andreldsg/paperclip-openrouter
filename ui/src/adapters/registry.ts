@@ -15,6 +15,18 @@ import { processUIAdapter } from "./process";
 import { httpUIAdapter } from "./http";
 import { loadDynamicParser, invalidateDynamicParser, setDynamicParserResultNotifier } from "./dynamic-loader";
 import { SchemaConfigFields, buildSchemaAdapterConfig } from "./schema-config-fields";
+import {
+  type as openRouterType,
+  label as openRouterLabel,
+  models as openRouterModels,
+  agentConfigurationDoc as openRouterAgentConfigurationDoc,
+} from "@paperclipai/adapter-openrouter";
+
+import {
+  parseStdout as openRouterParseStdout,
+  buildConfig as openRouterBuildConfig,
+  configFields as openRouterConfigFields,
+} from "@paperclipai/adapter-openrouter/ui";
 
 const uiAdapters: UIAdapterModule[] = [];
 const adaptersByType = new Map<string, UIAdapterModule>();
@@ -38,6 +50,16 @@ const overrideGeneration = new Map<string, number>();
 // Subscriber list — components can register to be notified when adapters change
 // (e.g., when a dynamic parser replaces a placeholder).
 const adapterChangeListeners = new Set<() => void>();
+
+const openRouterAdapter: UIAdapterModule = {
+  type: openRouterType,
+  label: openRouterLabel,
+  models: openRouterModels,
+  parseStdout: openRouterParseStdout,
+  buildConfig: openRouterBuildConfig,
+  configFields: openRouterConfigFields,
+  agentConfigurationDoc: openRouterAgentConfigurationDoc,
+};
 
 /** Subscribe to adapter registry changes. Returns unsubscribe function. */
 export function onAdapterChange(fn: () => void): () => void {
@@ -65,6 +87,7 @@ function registerBuiltInUIAdapters() {
     piLocalUIAdapter,
     cursorLocalUIAdapter,
     openClawGatewayUIAdapter,
+    openRouterAdapter,
     processUIAdapter,
     httpUIAdapter,
   ]) {

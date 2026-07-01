@@ -13,10 +13,24 @@ import { printPiStreamEvent } from "@paperclipai/adapter-pi-local/cli";
 import { printOpenClawGatewayStreamEvent } from "@paperclipai/adapter-openclaw-gateway/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
+import {
+  type as openRouterType,
+  label as openRouterLabel,
+} from "@paperclipai/adapter-openrouter";
+
+import {
+  formatEvent as openRouterFormatEvent,
+} from "@paperclipai/adapter-openrouter/cli";
 
 const claudeLocalCLIAdapter: CLIAdapterModule = {
   type: "claude_local",
   formatStdoutEvent: printClaudeStreamEvent,
+};
+
+const openRouterAdapter: CLIAdapterModule = {
+  type: openRouterType,
+  label: openRouterLabel,
+  formatEvent: openRouterFormatEvent,
 };
 
 const acpxLocalCLIAdapter: CLIAdapterModule = {

@@ -118,6 +118,20 @@ import {
   models as openclawGatewayModels,
 } from "@paperclipai/adapter-openclaw-gateway";
 import { listCodexModels, refreshCodexModels } from "./codex-models.js";
+import {
+  type as openRouterType,
+  label as openRouterLabel,
+  models as openRouterModels,
+  agentConfigurationDoc as openRouterAgentConfigurationDoc,
+} from "@paperclipai/adapter-openrouter";
+import {
+  execute as openRouterExecute,
+  testEnvironment as openRouterTestEnvironment,
+  listSkills as listOpenRouterSkills,
+  syncSkills as syncOpenRouterSkills,
+  sessionCodec as openRouterSessionCodec,
+  detectModel as detectOpenRouterModel,
+} from "@paperclipai/adapter-openrouter/server";
 import { listCursorModels } from "./cursor-models.js";
 import {
   execute as piExecute,
@@ -400,6 +414,23 @@ const piLocalAdapter: ServerAdapterModule = {
   agentConfigurationDoc: piAgentConfigurationDoc,
 };
 
+const openRouterAdapter: ServerAdapterModule = {
+  type: openRouterType,
+  execute: openRouterExecute,
+  testEnvironment: openRouterTestEnvironment,
+  listSkills: listOpenRouterSkills,
+  syncSkills: syncOpenRouterSkills,
+  sessionCodec: openRouterSessionCodec,
+  detectModel: detectOpenRouterModel,
+  models: openRouterModels,
+  sessionManagement: getAdapterSessionManagement(openRouterType) ?? undefined,
+  supportsLocalAgentJwt: true,
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: true,
+  agentConfigurationDoc: openRouterAgentConfigurationDoc,
+};
+
 const adaptersByType = new Map<string, ServerAdapterModule>();
 
 // For builtin types that are overridden by an external adapter, we keep the
@@ -425,6 +456,7 @@ function registerBuiltInAdapters() {
     hermesGatewayAdapter,
     hermesLocalAdapter,
     openclawGatewayAdapter,
+    openRouterAdapter,
     processAdapter,
     httpAdapter,
   ]) {
