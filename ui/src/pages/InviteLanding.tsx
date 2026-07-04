@@ -24,6 +24,7 @@ const ENABLED_INVITE_ADAPTERS = new Set([
   "codex_local",
   "gemini_local",
   "opencode_local",
+  "openclaw_gateway",
   "pi_local",
   "cursor",
 ]);
